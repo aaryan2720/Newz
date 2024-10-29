@@ -11,65 +11,45 @@ class News extends Component {
       loading: false,
       page: 1,
       totalResults: 0,
-      pageSize: 99
+      error: null, // For error handling
+      pageSize: 20
     };
-    document.title = `${this.capitalize(this.props.category)} - Newz `;
-    this._isMounted = false;
+    document.title = `${this.capitalize(this.props.category)} - Newz`;
   }
 
-  capitalize = (str) => {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  };
+  capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 
   async componentDidMount() {
-    this._isMounted = true;
     this.fetchNews();
-    window.addEventListener('scroll', this.handleScroll);
   }
-
-  componentWillUnmount() {
-    this._isMounted = false;
-    window.removeEventListener('scroll', this.handleScroll);
-  }
-
-  handleScroll = () => {
-    if (window.innerHeight + document.documentElement.scrollTop !== document.documentElement.offsetHeight || this.state.loading) {
-      return;
-    }
-    this.fetchMoreNews();
-  };
 
   fetchNews = async () => {
-    this.setState({ loading: true });
-  
-    const apiUrl = process.env.NODE_ENV === 'development'
-      ? `https://newsapi.org/v2/top-headlines?country=in&category=${this.props.category}&page=${this.state.page}&pageSize=${this.state.pageSize}&apiKey=${process.env.REACT_APP_NEWS_API_KEY}`
-      : `/api/news/top-headlines?country=us&category=${this.props.category}&page=${this.state.page}&pageSize=${this.state.pageSize}`;
-  
+    this.setState({ loading: true, error: null });
+    const apiKey = process.env.REACT_APP_NEWS_API_KEY;
+    const apiUrl = `https://newsapi.org/v2/top-headlines?country=us&category=${this.props.category}&page=${this.state.page}&pageSize=${this.state.pageSize}&apiKey=${apiKey}`;
+
     try {
       let response = await fetch(apiUrl);
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Error: ${response.status}`);
       let parsedData = await response.json();
-      this.setState({
-        articles: parsedData.articles,
+      this.setState((prevState) => ({
+        articles: [...prevState.articles, ...parsedData.articles],
         loading: false,
         totalResults: parsedData.totalResults
-      });
+      }));
     } catch (error) {
       console.error("Failed to fetch news:", error);
-      this.setState({ loading: false });
+      this.setState({ loading: false, error: error.message });
     }
   };
 
-  fetchMoreNews = async () => {
-    if (this.state.loading) return;
-    this.setState({ page: this.state.page + 1 });
-    await this.fetchNews();
+  loadMoreNews = () => {
+    this.setState((prevState) => ({ page: prevState.page + 1 }), this.fetchNews);
   };
 
   render() {
+    const { articles, loading, error, totalResults, pageSize } = this.state;
+
     return (
       <div className='container my-3'>
         <h2>
@@ -79,28 +59,30 @@ class News extends Component {
           </span>
           {' '} - Top {this.capitalize(this.props.category)} Headlines
         </h2>
-        {this.state.loading && <Spinner />}
+
+        {error && <p className="text-danger">Failed to load news: {error}</p>}
+        {!loading && !articles.length && <p>No articles found.</p>}
+
         <InfiniteScroll
           pageStart={0}
-          loadMore={this.fetchMoreNews}
-          hasMore={this.state.page + 1 <= Math.ceil(this.state.totalResults / this.state.pageSize)}
-          loader={<Spinner />}
+          loadMore={this.loadMoreNews}
+          hasMore={this.state.page * pageSize < totalResults}
+          loader={<Spinner key={0} />}
         >
           <div className='row'>
-            {this.state.articles &&
-              this.state.articles.map((element) => (
-                <div className='col-md-3 my-2 mx-3' key={`${element.url}-${element.publishedAt}`}>
-                  <Newsitem
-                    title={element.title}
-                    description={element.description}
-                    imageUrl={element.urlToImage}
-                    newsUrl={element.url}
-                    author={element.author}
-                    date={element.publishedAt}
-                    source={element.source.name}
-                  />
-                </div>
-              ))}
+            {articles.map((article) => (
+              <div className='col-md-3 my-2 mx-3' key={`${article.url}-${article.publishedAt}`}>
+                <Newsitem
+                  title={article.title}
+                  description={article.description}
+                  imageUrl={article.urlToImage}
+                  newsUrl={article.url}
+                  author={article.author}
+                  date={article.publishedAt}
+                  source={article.source.name}
+                />
+              </div>
+            ))}
           </div>
         </InfiniteScroll>
       </div>

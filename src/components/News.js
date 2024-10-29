@@ -25,7 +25,7 @@ class News extends Component {
 
   fetchNews = async () => {
     this.setState({ loading: true, error: null });
-    const apiKey = process.env.REACT_APP_NEWS_API_KEY;
+    const apiKey = "4cd29e64d835440f8cb461bfcdf91505";
     const apiUrl = `https://newsapi.org/v2/top-headlines?country=us&category=${this.props.category}&page=${this.state.page}&pageSize=${this.state.pageSize}&apiKey=${apiKey}`;
 
     try {

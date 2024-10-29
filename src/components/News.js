@@ -43,7 +43,7 @@ class News extends Component {
     this.setState({ loading: true });
   
     const apiUrl = process.env.NODE_ENV === 'development'
-      ? `https://newsapi.org/v2/top-headlines?country=us&category=${this.props.category}&page=${this.state.page}&pageSize=${this.state.pageSize}&apiKey=${process.env.REACT_APP_NEWS_API_KEY}`
+      ? `https://newsapi.org/v2/top-headlines?country=in&category=${this.props.category}&page=${this.state.page}&pageSize=${this.state.pageSize}&apiKey=${process.env.REACT_APP_NEWS_API_KEY}`
       : `/api/news/top-headlines?country=us&category=${this.props.category}&page=${this.state.page}&pageSize=${this.state.pageSize}`;
   
     try {

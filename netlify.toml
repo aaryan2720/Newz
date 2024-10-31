@@ -1,9 +1,0 @@
-[build]
-  command = "npm run build"
-  publish = "build"
-
-[[redirects]]
-  from = "/api/news/*"
-  to = "https://newsapi.org/v2/:splat?apiKey=YOUR_API_KEY"
-  status = 200
-  force = true
